@@ -47,4 +47,5 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency("safe_yaml",             "~> 1.0")
   s.add_runtime_dependency("terminal-table",        ">= 1.8", "< 4.0")
   s.add_runtime_dependency("webrick",               "~> 1.7")
+  s.add_runtime_dependency("parallel",              "~> 1.22")
 end

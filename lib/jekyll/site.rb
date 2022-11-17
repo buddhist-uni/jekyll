@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require 'parallel'
 
 module Jekyll
   class Site
@@ -559,24 +560,36 @@ module Jekyll
 
     def render_docs(payload)
       collections.each_value do |collection|
-        collection.docs.each do |document|
-          render_regenerated(document, payload)
+        docs_to_regen = collection.docs.select do |document|
+          regenerator.regenerate?(document)
+        end
+        docs_to_regen.each do |document|
+          document.renderer.payload = payload
+        end
+        outs = Parallel.map(docs_to_regen) do |document|
+          document.renderer.run
+        end
+        docs_to_regen.each_with_index do |document, index|
+          document.output = outs[index]
+          document.trigger_hooks(:post_render)
         end
       end
     end
 
     def render_pages(payload)
-      pages.each do |page|
-        render_regenerated(page, payload)
+      pages_to_regen = pages.select do |document|
+        regenerator.regenerate?(document)
       end
-    end
-
-    def render_regenerated(document, payload)
-      return unless regenerator.regenerate?(document)
-
-      document.renderer.payload = payload
-      document.output = document.renderer.run
-      document.trigger_hooks(:post_render)
+      pages_to_regen.each do |page|
+        page.renderer.payload = payload
+      end
+      outs = Parallel.map(pages) do |page|
+        page.renderer.run
+      end
+      pages.each_with_index do |page, index|
+        page.output = outs[index]
+        page.trigger_hooks(:post_render)
+      end
     end
   end
 end
